@@ -90,11 +90,11 @@ export function useThemeColors() {
   if (themeMode === 'best') {
     return {
       background: 'transparent',
-      card: 'rgba(26, 31, 46, 0.78)',
+      card: 'rgba(15, 23, 42, 0.62)',
       text: '#F9FAFB',
       subtext: '#D1D5DB',
-      border: 'rgba(245, 158, 11, 0.35)',
-      headerBg: 'rgba(10, 14, 23, 0.85)',
+      border: 'rgba(245, 158, 11, 0.4)',
+      headerBg: 'rgba(10, 14, 23, 0.65)',
     };
   }
   return {

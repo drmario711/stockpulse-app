@@ -107,6 +107,6 @@ const styles = StyleSheet.create({
   },
   bgOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(10, 14, 23, 0.82)',
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
   },
 });
