@@ -77,7 +77,7 @@ export default function StockCard({
 
   // Exchange badge color
   const exchangeColor = (() => {
-    switch (exchange.toUpperCase()) {
+    switch ((exchange || '').toUpperCase()) {
       case 'NYSE':
         return colors.accent.info;
       case 'NASDAQ':

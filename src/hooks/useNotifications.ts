@@ -4,16 +4,22 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { API_BASE_URL } from '@/src/utils/constants';
 
-// Configure notification handling
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Bezpečná konfigurace notifikací bez pádu v Expo Go
+try {
+  if (Constants.appOwnership !== 'expo') {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  }
+} catch {
+  // Ignorovat chybu v Expo Go
+}
 
 export function useNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
@@ -23,9 +29,8 @@ export function useNotifications() {
 
   const registerForPushNotifications = useCallback(async () => {
     try {
-      // V Expo Go nepodporováno v novějších SDK
+      // V Expo Go nepodporováno v novějších SDK (zabránění pádu)
       if (Constants.appOwnership === 'expo') {
-        console.log('Push notifications are limited in Expo Go.');
         return null;
       }
 
@@ -99,24 +104,24 @@ export function useNotifications() {
   useEffect(() => {
     registerForPushNotifications();
 
-    // Listen for incoming notifications
-    notificationListener.current = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        setNotification(notification);
-      }
-    );
-
-    // Listen for notification interactions (taps)
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const data = response.notification.request.content.data;
-        // Handle navigation based on notification data
-        if (data?.ticker) {
-          // Navigation will be handled by the component using this hook
-          console.log('Navigate to:', data.ticker);
+    if (Constants.appOwnership !== 'expo') {
+      // Listen for incoming notifications
+      notificationListener.current = Notifications.addNotificationReceivedListener(
+        (notification) => {
+          setNotification(notification);
         }
-      }
-    );
+      );
+
+      // Listen for notification interactions (taps)
+      responseListener.current = Notifications.addNotificationResponseReceivedListener(
+        (response) => {
+          const data = response.notification.request.content.data;
+          if (data?.ticker) {
+            console.log('Navigate to:', data.ticker);
+          }
+        }
+      );
+    }
 
     return () => {
       notificationListener.current?.remove();
