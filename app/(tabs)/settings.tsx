@@ -6,49 +6,109 @@ import {
   ScrollView,
   Switch,
   Pressable,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useNotifications } from '@/src/hooks/useNotifications';
+import { useSettings, ThemeMode } from '@/src/context/SettingsContext';
+import { STOCKS } from '@/src/utils/constants';
 
 export default function SettingsScreen() {
-  const { expoPushToken } = useNotifications();
+  const { themeMode, setThemeMode, tickerNotifications, toggleTickerNotification } = useSettings();
   const [newsNotifications, setNewsNotifications] = useState(true);
   const [insiderNotifications, setInsiderNotifications] = useState(true);
   const [breakingNotifications, setBreakingNotifications] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const toggleSwitch = (setter: (v: boolean) => void, value: boolean) => {
+  const toggleGlobalSwitch = (setter: (v: boolean) => void, value: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setter(!value);
   };
 
+  const handleSelectTheme = (mode: ThemeMode) => {
+    Haptics.selectionAsync();
+    setThemeMode(mode);
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Push Token Status */}
+      {/* Vizuální režim aplikace */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📱 Push Notifikace</Text>
-        <View style={styles.tokenCard}>
-          <Ionicons
-            name={expoPushToken ? 'checkmark-circle' : 'alert-circle'}
-            size={20}
-            color={expoPushToken ? '#10B981' : '#EF4444'}
-          />
-          <Text style={styles.tokenText}>
-            {expoPushToken ? 'Token registrován' : 'Token neregistrován'}
-          </Text>
+        <Text style={styles.sectionTitle}>🎨 Vizuální režim</Text>
+        <Text style={styles.sectionSubtitle}>
+          Vyberte si vzhled aplikace podle preferencí
+        </Text>
+
+        <View style={styles.themeOptionsRow}>
+          <Pressable
+            style={[
+              styles.themeCard,
+              themeMode === 'light' && styles.themeCardActive,
+            ]}
+            onPress={() => handleSelectTheme('light')}
+          >
+            <Ionicons
+              name="sunny"
+              size={24}
+              color={themeMode === 'light' ? '#6366F1' : '#9CA3AF'}
+            />
+            <Text
+              style={[
+                styles.themeText,
+                themeMode === 'light' && styles.themeTextActive,
+              ]}
+            >
+              1. Světlý
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.themeCard,
+              themeMode === 'dark' && styles.themeCardActive,
+            ]}
+            onPress={() => handleSelectTheme('dark')}
+          >
+            <Ionicons
+              name="moon"
+              size={24}
+              color={themeMode === 'dark' ? '#6366F1' : '#9CA3AF'}
+            />
+            <Text
+              style={[
+                styles.themeText,
+                themeMode === 'dark' && styles.themeTextActive,
+              ]}
+            >
+              2. Tmavý
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.themeCard,
+              themeMode === 'best' && styles.themeCardActiveBest,
+            ]}
+            onPress={() => handleSelectTheme('best')}
+          >
+            <Ionicons
+              name="sparkles"
+              size={24}
+              color={themeMode === 'best' ? '#F59E0B' : '#9CA3AF'}
+            />
+            <Text
+              style={[
+                styles.themeText,
+                themeMode === 'best' && styles.themeTextActiveBest,
+              ]}
+            >
+              3. Nejlepší ✨
+            </Text>
+          </Pressable>
         </View>
-        {expoPushToken && (
-          <Text style={styles.tokenValue} numberOfLines={1}>
-            {expoPushToken}
-          </Text>
-        )}
       </View>
 
-      {/* Notification Settings */}
+      {/* Obecná nastavení upozornění */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🔔 Nastavení upozornění</Text>
+        <Text style={styles.sectionTitle}>🔔 Typy upozornění</Text>
 
         <View style={styles.settingRow}>
           <View style={styles.settingInfo}>
@@ -59,7 +119,7 @@ export default function SettingsScreen() {
           </View>
           <Switch
             value={newsNotifications}
-            onValueChange={() => toggleSwitch(setNewsNotifications, newsNotifications)}
+            onValueChange={() => toggleGlobalSwitch(setNewsNotifications, newsNotifications)}
             trackColor={{ false: '#374151', true: '#6366F1' }}
             thumbColor="#F9FAFB"
           />
@@ -74,7 +134,7 @@ export default function SettingsScreen() {
           </View>
           <Switch
             value={insiderNotifications}
-            onValueChange={() => toggleSwitch(setInsiderNotifications, insiderNotifications)}
+            onValueChange={() => toggleGlobalSwitch(setInsiderNotifications, insiderNotifications)}
             trackColor={{ false: '#374151', true: '#6366F1' }}
             thumbColor="#F9FAFB"
           />
@@ -89,71 +149,61 @@ export default function SettingsScreen() {
           </View>
           <Switch
             value={breakingNotifications}
-            onValueChange={() => toggleSwitch(setBreakingNotifications, breakingNotifications)}
+            onValueChange={() => toggleGlobalSwitch(setBreakingNotifications, breakingNotifications)}
             trackColor={{ false: '#374151', true: '#6366F1' }}
             thumbColor="#F9FAFB"
           />
         </View>
       </View>
 
-      {/* App Settings */}
+      {/* Nastavení upozornění pro jednotlivé firmy */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>⚙️ Aplikace</Text>
+        <Text style={styles.sectionTitle}>🏢 Upozornění pro jednotlivé firmy</Text>
+        <Text style={styles.sectionSubtitle}>
+          Zapněte nebo vypněte upozornění pro každou sledovanou firmu zvlášť
+        </Text>
 
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Auto-refresh (30 min)</Text>
-            <Text style={styles.settingDesc}>
-              Automatická aktualizace novinek každých 30 minut
-            </Text>
-          </View>
-          <Switch
-            value={autoRefresh}
-            onValueChange={() => toggleSwitch(setAutoRefresh, autoRefresh)}
-            trackColor={{ false: '#374151', true: '#6366F1' }}
-            thumbColor="#F9FAFB"
-          />
-        </View>
-      </View>
-
-      {/* Data Sources */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📊 Zdroje dat</Text>
-        <View style={styles.sourceList}>
-          {[
-            { name: 'Finnhub', desc: 'Novinky, insider transakce, kotace', icon: '📈' },
-            { name: 'Yahoo Finance', desc: 'RSS feed s novinkami', icon: '🟣' },
-            { name: 'Google News', desc: 'Agregované novinky z více zdrojů', icon: '🔍' },
-            { name: 'SEC EDGAR', desc: 'Insider filings, 13F institucionální data', icon: '🏛️' },
-            { name: 'MarketBeat', desc: 'Analýzy a ratingy', icon: '📊' },
-          ].map((source) => (
-            <View key={source.name} style={styles.sourceRow}>
-              <Text style={styles.sourceIcon}>{source.icon}</Text>
-              <View style={styles.sourceInfo}>
-                <Text style={styles.sourceName}>{source.name}</Text>
-                <Text style={styles.sourceDesc}>{source.desc}</Text>
+        {STOCKS.map((s) => {
+          const isEnabled = tickerNotifications[s.ticker] ?? true;
+          return (
+            <View key={s.ticker} style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>
+                  {s.ticker} – {s.name}
+                </Text>
+                <Text style={styles.settingDesc}>
+                  Sektor: {s.sector} ({s.exchange})
+                </Text>
               </View>
-              <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+              <Switch
+                value={isEnabled}
+                onValueChange={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  toggleTickerNotification(s.ticker);
+                }}
+                trackColor={{ false: '#374151', true: '#10B981' }}
+                thumbColor="#F9FAFB"
+              />
             </View>
-          ))}
-        </View>
+          );
+        })}
       </View>
 
-      {/* About */}
+      {/* O aplikaci */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>ℹ️ O aplikaci</Text>
         <View style={styles.aboutCard}>
-          <Text style={styles.aboutTitle}>StockPulse v1.0.0</Text>
+          <Text style={styles.aboutTitle}>StockPulse 1.0</Text>
           <Text style={styles.aboutDesc}>
-            Sledování novinek, insider transakcí a skrytých příležitostí pro 15 vybraných akcií.
+            Aplikace pro sledování nejnovějších zpráv, insider transakcí a ověřených aktualit k vašemu portfoliu firem.
           </Text>
           <Text style={styles.aboutNote}>
-            ⚠️ Informace v aplikaci nejsou investičním doporučením. Vždy provádějte vlastní due diligence.
+            Všechna data jsou agregována ze spolehlivých zdrojů: Finnhub API, Yahoo Finance, Google News a SEC EDGAR.
           </Text>
         </View>
       </View>
 
-      <View style={{ height: 60 }} />
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
@@ -164,47 +214,65 @@ const styles = StyleSheet.create({
     backgroundColor: '#0A0E17',
   },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    padding: 16,
   },
   section: {
-    marginBottom: 28,
+    marginBottom: 24,
   },
   sectionTitle: {
+    color: '#F9FAFB',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
     color: '#9CA3AF',
     fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
     marginBottom: 12,
   },
-  tokenCard: {
+  themeOptionsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  themeCard: {
+    flex: 1,
     backgroundColor: '#1A1F2E',
     borderRadius: 12,
-    padding: 14,
-    gap: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#2D3348',
   },
-  tokenText: {
-    color: '#F9FAFB',
-    fontSize: 15,
-    fontWeight: '600',
+  themeCardActive: {
+    borderColor: '#6366F1',
+    backgroundColor: '#1E2438',
   },
-  tokenValue: {
-    color: '#6B7280',
-    fontSize: 11,
-    marginTop: 8,
-    fontFamily: 'SpaceMono',
+  themeCardActiveBest: {
+    borderColor: '#F59E0B',
+    backgroundColor: '#262118',
+  },
+  themeText: {
+    color: '#9CA3AF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
+  },
+  themeTextActive: {
+    color: '#6366F1',
+    fontWeight: '700',
+  },
+  themeTextActiveBest: {
+    color: '#F59E0B',
+    fontWeight: '700',
   },
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#1A1F2E',
+    padding: 14,
     borderRadius: 12,
-    padding: 16,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#2D3348',
@@ -215,42 +283,11 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     color: '#F9FAFB',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  settingDesc: {
-    color: '#6B7280',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  sourceList: {
-    backgroundColor: '#1A1F2E',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#2D3348',
-    overflow: 'hidden',
-  },
-  sourceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2D3348',
-  },
-  sourceIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  sourceInfo: {
-    flex: 1,
-  },
-  sourceName: {
-    color: '#F9FAFB',
     fontSize: 14,
     fontWeight: '600',
   },
-  sourceDesc: {
-    color: '#6B7280',
+  settingDesc: {
+    color: '#9CA3AF',
     fontSize: 12,
     marginTop: 2,
   },
