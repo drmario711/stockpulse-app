@@ -39,14 +39,15 @@ class CronScheduler {
     }
 
     this.isRunning = true;
-    const refreshId = this.db.logRefreshStart();
-    const stocks = this.db.getAllStocks();
-    let totalNew = 0;
-    let totalFetched = 0;
-    const errors = [];
-    const tickersWithNews = [];
+    try {
+      const refreshId = this.db.logRefreshStart();
+      const stocks = this.db.getAllStocks();
+      let totalNew = 0;
+      let totalFetched = 0;
+      const errors = [];
+      const tickersWithNews = [];
 
-    console.log(`[Cron] Starting full refresh for ${stocks.length} stocks...`);
+      console.log(`[Cron] Starting full refresh for ${stocks.length} stocks...`);
 
     for (const stock of stocks) {
       try {
@@ -127,8 +128,8 @@ class CronScheduler {
           errors.push(`Insights (${stock.ticker}): ${e.message}`);
         }
 
-        // Small delay between stocks to be nice to APIs
-        await new Promise(r => setTimeout(r, 500));
+        // Small delay between stocks
+        await new Promise(r => setTimeout(r, 50));
 
       } catch (err) {
         errors.push(`${stock.ticker}: ${err.message}`);
@@ -151,7 +152,6 @@ class CronScheduler {
       JSON.stringify({ stocks_processed: stocks.length, tickers_with_news: tickersWithNews })
     );
 
-    this.isRunning = false;
     console.log(`[Cron] Refresh complete: ${totalNew} new items, ${errors.length} errors`);
 
     return {
@@ -161,6 +161,9 @@ class CronScheduler {
       errors: errors.length,
       tickers_with_news: tickersWithNews,
     };
+    } finally {
+      this.isRunning = false;
+    }
   }
 }
 

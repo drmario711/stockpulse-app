@@ -6,6 +6,7 @@ import {
   ScrollView,
   Switch,
   Pressable,
+  ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -29,8 +30,8 @@ export default function SettingsScreen() {
     setThemeMode(mode);
   };
 
-  return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+  const content = (
+    <>
       {/* Vizuální režim aplikace */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🎨 Vizuální režim</Text>
@@ -205,6 +206,28 @@ export default function SettingsScreen() {
       </View>
 
       <View style={{ height: 40 }} />
+    </>
+  );
+
+  if (themeMode === 'best') {
+    return (
+      <ImageBackground
+        source={require('../../assets/images/specialni.jpg')}
+        style={{ flex: 1, width: '100%', height: '100%' }}
+        resizeMode="cover"
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.15)' }}>
+          <ScrollView contentContainerStyle={styles.content}>
+            {content}
+          </ScrollView>
+        </View>
+      </ImageBackground>
+    );
+  }
+
+  return (
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      {content}
     </ScrollView>
   );
 }

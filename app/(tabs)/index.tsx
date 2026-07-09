@@ -8,12 +8,13 @@ import {
   TextInput,
   ActivityIndicator,
   Pressable,
+  ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useStocks, useRefreshStatus, useManualRefresh } from '@/src/hooks/useStockData';
-import { useThemeColors } from '@/src/context/SettingsContext';
+import { useThemeColors, useSettings } from '@/src/context/SettingsContext';
 import StockCard from '@/src/components/StockCard';
 import RefreshStatus from '@/src/components/RefreshStatus';
 
@@ -28,6 +29,7 @@ const SECTOR_NAMES: Record<string, string> = {
 export default function DashboardScreen() {
   const router = useRouter();
   const colors = useThemeColors();
+  const { themeMode } = useSettings();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -54,13 +56,11 @@ export default function DashboardScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await manualRefresh.mutateAsync();
-      await refetchStocks();
-    } catch (e) {
-      console.log('Refresh error:', e);
-    }
+    } catch {}
+    await refetchStocks();
     setRefreshing(false);
   }, [manualRefresh, refetchStocks]);
 
@@ -78,8 +78,8 @@ export default function DashboardScreen() {
     );
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+  const content = (
+    <>
       <RefreshStatus
         lastRefresh={refreshStatus?.last_refresh}
         isRunning={refreshStatus?.is_running || manualRefresh.isPending}
@@ -169,6 +169,26 @@ export default function DashboardScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+    </>
+  );
+
+  if (themeMode === 'best') {
+    return (
+      <ImageBackground
+        source={require('../../assets/images/specialni.jpg')}
+        style={{ flex: 1, width: '100%', height: '100%' }}
+        resizeMode="cover"
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.15)' }}>
+          {content}
+        </View>
+      </ImageBackground>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {content}
     </View>
   );
 }

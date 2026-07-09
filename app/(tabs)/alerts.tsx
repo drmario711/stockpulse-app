@@ -7,11 +7,12 @@ import {
   RefreshControl,
   Pressable,
   ActivityIndicator,
+  ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRecentNews } from '@/src/hooks/useStockData';
-import { useThemeColors } from '@/src/context/SettingsContext';
+import { useThemeColors, useSettings } from '@/src/context/SettingsContext';
 import NewsItem from '@/src/components/NewsItem';
 import { STOCKS } from '@/src/utils/constants';
 
@@ -19,6 +20,7 @@ type FilterType = 'all' | string;
 
 export default function AlertsScreen() {
   const colors = useThemeColors();
+  const { themeMode } = useSettings();
   const [filter, setFilter] = useState<FilterType>('all');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -36,10 +38,8 @@ export default function AlertsScreen() {
     setRefreshing(false);
   }, [refetch]);
 
-  const tickersWithNews = [...new Set(news.map((n: any) => n.ticker))];
-
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+  const content = (
+    <>
       {/* Filter pills */}
       <ScrollView
         horizontal
@@ -49,23 +49,38 @@ export default function AlertsScreen() {
       >
         <Pressable
           style={[styles.filterPill, filter === 'all' && styles.filterPillActive]}
-          onPress={() => { setFilter('all'); Haptics.selectionAsync(); }}
+          onPress={() => {
+            Haptics.selectionAsync();
+            setFilter('all');
+          }}
         >
-          <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
-            Vše ({news.length})
+          <Text
+            style={[styles.filterText, filter === 'all' && styles.filterTextActive]}
+          >
+            Všechny zprávy ({news.length})
           </Text>
         </Pressable>
-        {tickersWithNews.map((ticker: string) => (
-          <Pressable
-            key={ticker}
-            style={[styles.filterPill, filter === ticker && styles.filterPillActive]}
-            onPress={() => { setFilter(ticker); Haptics.selectionAsync(); }}
-          >
-            <Text style={[styles.filterText, filter === ticker && styles.filterTextActive]}>
-              {ticker} ({news.filter((n: any) => n.ticker === ticker).length})
-            </Text>
-          </Pressable>
-        ))}
+
+        {STOCKS.map((stock) => {
+          const count = news.filter((n: any) => n.ticker === stock.ticker).length;
+          const isActive = filter === stock.ticker;
+          return (
+            <Pressable
+              key={stock.ticker}
+              style={[styles.filterPill, isActive && styles.filterPillActive]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setFilter(stock.ticker);
+              }}
+            >
+              <Text
+                style={[styles.filterText, isActive && styles.filterTextActive]}
+              >
+                {stock.ticker} ({count})
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       {isLoading ? (
@@ -130,6 +145,26 @@ export default function AlertsScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       )}
+    </>
+  );
+
+  if (themeMode === 'best') {
+    return (
+      <ImageBackground
+        source={require('../../assets/images/specialni.jpg')}
+        style={{ flex: 1, width: '100%', height: '100%' }}
+        resizeMode="cover"
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.15)' }}>
+          {content}
+        </View>
+      </ImageBackground>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {content}
     </View>
   );
 }
