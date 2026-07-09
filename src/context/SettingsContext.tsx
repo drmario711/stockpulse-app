@@ -74,3 +74,35 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 };
 
 export const useSettings = () => useContext(SettingsContext);
+
+export function useThemeColors() {
+  const { themeMode } = useSettings();
+  if (themeMode === 'light') {
+    return {
+      background: '#F8FAFC',
+      card: '#FFFFFF',
+      text: '#0F172A',
+      subtext: '#475569',
+      border: '#E2E8F0',
+      headerBg: '#FFFFFF',
+    };
+  }
+  if (themeMode === 'best') {
+    return {
+      background: 'transparent',
+      card: 'rgba(26, 31, 46, 0.78)',
+      text: '#F9FAFB',
+      subtext: '#D1D5DB',
+      border: 'rgba(245, 158, 11, 0.35)',
+      headerBg: 'rgba(10, 14, 23, 0.85)',
+    };
+  }
+  return {
+    background: '#0A0E17',
+    card: '#1A1F2E',
+    text: '#F9FAFB',
+    subtext: '#9CA3AF',
+    border: '#2D3348',
+    headerBg: '#0A0E17',
+  };
+}

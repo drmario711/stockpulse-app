@@ -9,11 +9,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useSettings, ThemeMode } from '@/src/context/SettingsContext';
+import { useSettings, useThemeColors, ThemeMode } from '@/src/context/SettingsContext';
 import { STOCKS } from '@/src/utils/constants';
 
 export default function SettingsScreen() {
   const { themeMode, setThemeMode, tickerNotifications, toggleTickerNotification } = useSettings();
+  const colors = useThemeColors();
   const [newsNotifications, setNewsNotifications] = useState(true);
   const [insiderNotifications, setInsiderNotifications] = useState(true);
   const [breakingNotifications, setBreakingNotifications] = useState(true);
@@ -29,7 +30,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Vizuální režim aplikace */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🎨 Vizuální režim</Text>

@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useStocks, useRefreshStatus, useManualRefresh } from '@/src/hooks/useStockData';
+import { useThemeColors } from '@/src/context/SettingsContext';
 import StockCard from '@/src/components/StockCard';
 import RefreshStatus from '@/src/components/RefreshStatus';
 
@@ -26,6 +27,7 @@ const SECTOR_NAMES: Record<string, string> = {
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -77,7 +79,7 @@ export default function DashboardScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <RefreshStatus
         lastRefresh={refreshStatus?.last_refresh}
         isRunning={refreshStatus?.is_running || manualRefresh.isPending}

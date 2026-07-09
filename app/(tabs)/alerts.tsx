@@ -11,12 +11,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRecentNews } from '@/src/hooks/useStockData';
+import { useThemeColors } from '@/src/context/SettingsContext';
 import NewsItem from '@/src/components/NewsItem';
 import { STOCKS } from '@/src/utils/constants';
 
 type FilterType = 'all' | string;
 
 export default function AlertsScreen() {
+  const colors = useThemeColors();
   const [filter, setFilter] = useState<FilterType>('all');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -37,7 +39,7 @@ export default function AlertsScreen() {
   const tickersWithNews = [...new Set(news.map((n: any) => n.ticker))];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Filter pills */}
       <ScrollView
         horizontal

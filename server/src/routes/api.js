@@ -122,7 +122,7 @@ module.exports = function createApiRouter(db, cronScheduler) {
     try {
       const lastRefresh = db.getLastRefresh();
       res.json({
-        last_refresh: lastRefresh || null,
+        last_refresh: lastRefresh?.finished_at || lastRefresh?.started_at || null,
         is_running: cronScheduler.isRunning,
       });
     } catch (err) {

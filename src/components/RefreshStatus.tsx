@@ -28,15 +28,24 @@ export default function RefreshStatus({
 }: RefreshStatusProps) {
   const [countdown, setCountdown] = useState('');
 
+  const getRefreshString = () => {
+    if (!lastRefresh) return null;
+    if (typeof lastRefresh === 'object') {
+      return (lastRefresh as any).finished_at || (lastRefresh as any).started_at || null;
+    }
+    return lastRefresh;
+  };
+
   // Compute countdown to next auto-refresh
   useEffect(() => {
-    if (!lastRefresh) {
+    const timeStr = getRefreshString();
+    if (!timeStr) {
       setCountdown('');
       return;
     }
 
     const updateCountdown = () => {
-      const lastDate = new Date(lastRefresh);
+      const lastDate = new Date(timeStr);
       const nextRefresh = new Date(lastDate.getTime() + REFRESH_INTERVAL);
       const diffSec = differenceInSeconds(nextRefresh, new Date());
 
@@ -56,9 +65,10 @@ export default function RefreshStatus({
   }, [lastRefresh]);
 
   const formattedTime = (() => {
-    if (!lastRefresh) return null;
+    const timeStr = getRefreshString();
+    if (!timeStr) return null;
     try {
-      return format(new Date(lastRefresh), 'HH:mm');
+      return format(new Date(timeStr), 'HH:mm:ss');
     } catch {
       return null;
     }
