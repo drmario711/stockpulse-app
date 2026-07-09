@@ -39,8 +39,8 @@ export default function DashboardScreen() {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
-      stock.ticker.toLowerCase().includes(q) ||
-      stock.company_name.toLowerCase().includes(q)
+      (stock.ticker || '').toLowerCase().includes(q) ||
+      (stock.company_name || stock.name || '').toLowerCase().includes(q)
     );
   });
 
@@ -144,7 +144,7 @@ export default function DashboardScreen() {
               <StockCard
                 key={stock.ticker}
                 ticker={stock.ticker}
-                name={stock.company_name}
+                name={stock.company_name || stock.name || stock.ticker}
                 sector={stock.sector}
                 exchange={stock.exchange}
                 totalNews={stock.total_news || 0}

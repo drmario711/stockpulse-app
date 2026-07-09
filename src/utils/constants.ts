@@ -143,8 +143,8 @@ export interface StockSummary {
 
 // ─── API Configuration ──────────────────────────────────────────────
 
-/** Base URL for the backend REST API. Change this for production deployment. */
-export const API_BASE_URL = 'http://localhost:3001/api';
+/** Base URL for the backend REST API. */
+export const API_BASE_URL = 'https://stockpulse-app-l14o.onrender.com/api';
 
 /** Auto-refresh interval: 30 minutes (in milliseconds) */
 export const REFRESH_INTERVAL = 30 * 60 * 1000;

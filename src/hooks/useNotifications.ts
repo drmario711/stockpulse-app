@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { API_BASE_URL } from '@/src/utils/constants';
 
 // Configure notification handling
@@ -22,6 +23,12 @@ export function useNotifications() {
 
   const registerForPushNotifications = useCallback(async () => {
     try {
+      // V Expo Go nepodporováno v novějších SDK
+      if (Constants.appOwnership === 'expo') {
+        console.log('Push notifications are limited in Expo Go.');
+        return null;
+      }
+
       // Check permissions
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
