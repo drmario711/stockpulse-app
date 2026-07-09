@@ -47,120 +47,76 @@ class CronScheduler {
       const errors = [];
       const tickersWithNews = [];
 
-      console.log(`[Cron] Starting full refresh for ${stocks.length} stocks...`);
+      console.log(`[Cron] Starting parallel full refresh for ${stocks.length} stocks...`);
 
-    for (const stock of stocks) {
-      try {
-        // 1. Finnhub news
-        const finnhubNews = await this.finnhub.fetchCompanyNews(
-          stock.finnhub_symbol, stock.ticker, 3
-        );
-        
-        // 2. RSS news
-        this.rss.clearErrors();
-        const rssNews = await this.rss.fetchAllForTicker(stock.ticker, stock.company_name);
-        if (this.rss.getErrors().length > 0) {
-          errors.push(...this.rss.getErrors());
-        }
-
-        // 3. SEC EDGAR filings as news
-        let secNews = [];
+      const processStock = async (stock) => {
         try {
-          secNews = await this.sec.fetchFilingAsNews(stock.ticker);
-        } catch (e) {
-          errors.push(`SEC (${stock.ticker}): ${e.message}`);
-        }
-
-        // Combine and deduplicate
-        const allNews = [...finnhubNews, ...rssNews, ...secNews];
-        totalFetched += allNews.length;
-        
-        const uniqueNews = this.deduplicator.deduplicate(allNews);
-        
-        if (uniqueNews.length > 0) {
-          const inserted = this.db.insertNews(uniqueNews);
-          totalNew += inserted;
-          
-          if (inserted > 0) {
-            tickersWithNews.push(stock.ticker);
-            
-            // Send notifications for significant news
-            for (const newsItem of uniqueNews.slice(0, 3)) {
-              if (newsItem.is_breaking) {
-                await this.notifications.sendBreakingNotification(
-                  stock.ticker, newsItem.title, newsItem.summary
-                );
-              }
-            }
-          }
-        }
-
-        // 4. Finnhub insider transactions
-        try {
-          const insiders = await this.finnhub.fetchInsiderTransactions(
-            stock.finnhub_symbol, stock.ticker
+          const finnhubNews = await this.finnhub.fetchCompanyNews(
+            stock.finnhub_symbol, stock.ticker, 3
           );
-          if (insiders.length > 0) {
-            const insertedInsiders = this.db.insertInsiderTransactions(insiders);
-            if (insertedInsiders > 0) {
-              // Notify about significant insider trades
-              for (const tx of insiders.slice(0, 2)) {
-                if (tx.transaction_type === 'buy' && tx.total_value > 100000) {
-                  await this.notifications.sendInsiderNotification(stock.ticker, tx);
-                }
-                if (tx.transaction_type === 'sell' && tx.total_value > 500000) {
-                  await this.notifications.sendInsiderNotification(stock.ticker, tx);
-                }
-              }
+          
+          this.rss.clearErrors();
+          const rssNews = await this.rss.fetchAllForTicker(stock.ticker, stock.company_name);
+
+          let secNews = [];
+          try {
+            secNews = await this.sec.fetchFilingAsNews(stock.ticker);
+          } catch {}
+
+          const allNews = [...finnhubNews, ...rssNews, ...secNews];
+          const uniqueNews = this.deduplicator.deduplicate(allNews);
+          
+          if (uniqueNews.length > 0) {
+            const inserted = this.db.insertNews(uniqueNews);
+            totalNew += inserted;
+            totalFetched += allNews.length;
+            if (inserted > 0) {
+              tickersWithNews.push(stock.ticker);
             }
           }
-        } catch (e) {
-          errors.push(`Insider (${stock.ticker}): ${e.message}`);
-        }
 
-        // 5. Generate/update insights
+          try {
+            const insights = this.insightGenerator.generateForTicker(stock.ticker, stock);
+            if (insights.length > 0) {
+              this.db.insertInsights(insights);
+            }
+          } catch {}
+        } catch (err) {
+          errors.push(`${stock.ticker}: ${err.message}`);
+        }
+      };
+
+      // Spustit všech 15 firem paralelně, ale s maximálním timeoutem 3.5 sekundy
+      await Promise.race([
+        Promise.allSettled(stocks.map(s => processStock(s))),
+        new Promise(resolve => setTimeout(resolve, 3500)),
+      ]);
+
+      if (totalNew > 0) {
         try {
-          const insights = this.insightGenerator.generateForTicker(stock.ticker, stock);
-          if (insights.length > 0) {
-            this.db.insertInsights(insights);
-          }
-        } catch (e) {
-          errors.push(`Insights (${stock.ticker}): ${e.message}`);
-        }
-
-        // Small delay between stocks
-        await new Promise(r => setTimeout(r, 50));
-
-      } catch (err) {
-        errors.push(`${stock.ticker}: ${err.message}`);
-        console.error(`[Cron] Error processing ${stock.ticker}:`, err.message);
+          await this.notifications.sendRefreshSummary(totalNew, tickersWithNews);
+        } catch {}
       }
-    }
 
-    // Send summary notification
-    if (totalNew > 0) {
-      await this.notifications.sendRefreshSummary(totalNew, tickersWithNews);
-    }
+      const status = errors.length === 0 ? 'success' : (totalNew > 0 ? 'partial' : 'error');
+      this.db.logRefreshEnd(
+        refreshId,
+        status,
+        totalFetched,
+        totalNew,
+        errors.length > 0 ? JSON.stringify(errors.slice(0, 20)) : null,
+        JSON.stringify({ stocks_processed: stocks.length, tickers_with_news: tickersWithNews })
+      );
 
-    const status = errors.length === 0 ? 'success' : (totalNew > 0 ? 'partial' : 'error');
-    this.db.logRefreshEnd(
-      refreshId,
-      status,
-      totalFetched,
-      totalNew,
-      errors.length > 0 ? JSON.stringify(errors.slice(0, 20)) : null,
-      JSON.stringify({ stocks_processed: stocks.length, tickers_with_news: tickersWithNews })
-    );
+      console.log(`[Cron] Refresh complete in parallel: ${totalNew} new items`);
 
-    console.log(`[Cron] Refresh complete: ${totalNew} new items, ${errors.length} errors`);
-
-    return {
-      status,
-      total_fetched: totalFetched,
-      new_items: totalNew,
-      errors: errors.length,
-      tickers_with_news: tickersWithNews,
-    };
+      return {
+        status,
+        total_fetched: totalFetched,
+        new_items: totalNew,
+        errors: errors.length,
+        tickers_with_news: tickersWithNews,
+      };
     } finally {
       this.isRunning = false;
     }

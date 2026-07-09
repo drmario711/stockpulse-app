@@ -17,14 +17,14 @@ STOCKS.forEach((s: any) => {
 });
 
 const SettingsContext = createContext<SettingsContextType>({
-  themeMode: 'best',
+  themeMode: 'dark',
   setThemeMode: () => {},
   tickerNotifications: defaultTickerNotifs,
   toggleTickerNotification: () => {},
 });
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('best');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('dark');
   const [tickerNotifications, setTickerNotifications] = useState<Record<string, boolean>>(
     defaultTickerNotifs
   );
@@ -90,11 +90,11 @@ export function useThemeColors() {
   if (themeMode === 'best') {
     return {
       background: 'transparent',
-      card: 'rgba(15, 23, 42, 0.62)',
+      card: 'rgba(15, 23, 42, 0.45)',
       text: '#F9FAFB',
       subtext: '#D1D5DB',
-      border: 'rgba(245, 158, 11, 0.4)',
-      headerBg: 'rgba(10, 14, 23, 0.65)',
+      border: 'rgba(245, 158, 11, 0.45)',
+      headerBg: 'rgba(10, 14, 23, 0.45)',
     };
   }
   return {

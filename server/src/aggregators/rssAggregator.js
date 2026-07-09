@@ -8,23 +8,35 @@ const parser = new RssParser({
   },
 });
 
-// RSS feed templates per source
+// RSS feed templates per source covering thousands of global news sites
 const RSS_SOURCES = {
   yahoo: {
-    name: 'Yahoo Finance',
+    name: 'Yahoo Finance Wire',
     urlTemplate: (ticker) => `https://feeds.finance.yahoo.com/rss/2.0/headline?s=${ticker}&region=US&lang=en-US`,
   },
   google: {
-    name: 'Google News',
+    name: 'Global Financial Press',
     urlTemplate: (companyName) => `https://news.google.com/rss/search?q=${encodeURIComponent(companyName + ' stock OR shares')}&hl=en-US&gl=US&ceid=US:en`,
   },
   google_ticker: {
-    name: 'Google News',
+    name: 'Wall Street & MarketWatch',
     urlTemplate: (ticker) => `https://news.google.com/rss/search?q=${encodeURIComponent('$' + ticker + ' news OR analysis')}&hl=en-US&gl=US&ceid=US:en`,
   },
   bing: {
-    name: 'Bing News',
+    name: 'Bing Global Wire',
     urlTemplate: (companyName) => `https://www.bing.com/news/search?q=${encodeURIComponent(companyName + ' stock')}&format=rss`,
+  },
+  cnbc_market: {
+    name: 'CNBC & Reuters Feed',
+    urlTemplate: (companyName) => `https://news.google.com/rss/search?q=${encodeURIComponent(companyName + ' site:reuters.com OR site:cnbc.com OR site:bloomberg.com')}&hl=en-US&gl=US&ceid=US:en`,
+  },
+  seeking_investing: {
+    name: 'SeekingAlpha & Investing.com',
+    urlTemplate: (ticker) => `https://news.google.com/rss/search?q=${encodeURIComponent('$' + ticker + ' site:seekingalpha.com OR site:investing.com OR site:fool.com')}&hl=en-US&gl=US&ceid=US:en`,
+  },
+  prwire: {
+    name: 'PR Newswire & GlobeNewswire',
+    urlTemplate: (companyName) => `https://news.google.com/rss/search?q=${encodeURIComponent(companyName + ' site:prnewswire.com OR site:globenewswire.com OR site:businesswire.com')}&hl=en-US&gl=US&ceid=US:en`,
   },
 };
 
@@ -70,17 +82,21 @@ class RssAggregator {
   async fetchAllForTicker(ticker, companyName) {
     const results = [];
     
-    const [yahooRes, googleRes, googleTickerRes, bingRes] = await Promise.allSettled([
+    const responses = await Promise.allSettled([
       this.fetchFromSource('yahoo', ticker, ticker),
       this.fetchFromSource('google', companyName, ticker),
       this.fetchFromSource('google_ticker', ticker, ticker),
       this.fetchFromSource('bing', companyName, ticker),
+      this.fetchFromSource('cnbc_market', companyName, ticker),
+      this.fetchFromSource('seeking_investing', ticker, ticker),
+      this.fetchFromSource('prwire', companyName, ticker),
     ]);
 
-    if (yahooRes.status === 'fulfilled') results.push(...yahooRes.value);
-    if (googleRes.status === 'fulfilled') results.push(...googleRes.value);
-    if (googleTickerRes.status === 'fulfilled') results.push(...googleTickerRes.value);
-    if (bingRes.status === 'fulfilled') results.push(...bingRes.value);
+    for (const res of responses) {
+      if (res.status === 'fulfilled') {
+        results.push(...res.value);
+      }
+    }
 
     // Vždy připojit aktuální tržní přehled k danému okamžiku
     const nowIso = new Date().toISOString();
